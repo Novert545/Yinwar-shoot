@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Yinwar</title>
+<link href="https://fonts.googleapis.com/css2?family=Rye&family=Fredoka+One&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  height: 100%;
+  background: radial-gradient(ellipse at center, #1a0a2e 0%, #0d0520 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Fredoka One', cursive;
+  touch-action: manipulation;
+  overflow: hidden;
+}
+
+#game {
+  width: min(680px, 100vw);
+  min-height: 100vh;
+  background: linear-gradient(180deg, #1a0a2e 0%, #2d1a4a 40%, #4a1a1a 100%);
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+@media (min-width: 700px) {
+  #game {
+    min-height: auto;
+    border-radius: 20px;
+    box-shadow: 0 0 60px rgba(255,68,0,0.3), 0 20px 60px rgba(0,0,0,0.8);
+    border: 3px solid #DAA520;
+  }
+  body { overflow: auto; }
+}
+
+/* STARS */
+.stars {
+  position: absolute; top: 0; left: 0; right: 0; height: 200px;
+  overflow: hidden; pointer-events: none; z-index: 0;
+}
+.star {
+  position: absolute; border-radius: 50%; background: #fff;
+  animation: twinkle 2s infinite alternate;
+}
+@keyframes twinkle { from { opacity: 0.2; } to { opacity: 1; } }
+
+/* BANNER */
+.banner {
+  font-family: 'Rye', serif;
+  text-align: center;
+  font-size: clamp(22px, 5vw, 30px);
+  color: #FFD700;
+  text-shadow: 0 0 20px #ff8c00, 3px 3px 0 #8B0000;
+  padding: 24px 0 8px;
+  letter-spacing: 3px;
+  position: relative; z-index: 2;
+}
+
+/* LIGHTS */
+.lights-row {
+  display: flex; justify-content: center; flex-wrap: wrap; gap: 12px;
+  padding: 6px 20px 4px; z-index: 2; position: relative;
+}
+.bulb {
+  width: 18px; height: 18px; border-radius: 50%;
+  animation: blink 1.2s infinite alternate;
+}
+.bulb:nth-child(odd)  { background: #FF4444; animation-delay: 0s; }
+.bulb:nth-child(even) { background: #FFD700; animation-delay: 0.6s; }
+@keyframes blink {
+  from { opacity: 0.3; box-shadow: none; }
+  to   { opacity: 1;   box-shadow: 0 0 10px 4px currentColor; }
+}
+
+
+
+/* SHELF */
+.shelf {
+  background: linear-gradient(180deg, #9B5523 0%, #7B4318 60%, #5a2e0e 100%);
+  border-top: 5px solid #DAA520;
+  border-bottom: 5px solid #5a2a05;
+  margin: 18px 20px 0;
+  border-radius: 12px;
+  padding: 28px 12px 20px;
+  position: relative;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6), inset 0 2px 0 rgba(255,255,255,0.1);
+  z-index: 2;
+}
+.shelf::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(90deg,
+    rgba(255,255,255,0.04) 0, rgba(255,255,255,0.04) 2px,
+    transparent 2px, transparent 80px);
+  border-radius: 12px;
+  pointer-events: none;
+}
+
+/* TARGETS */
+.targets {
+  display: flex; justify-content: space-around; align-items: flex-end; gap: 10px;
+}
+
+.target-wrap {
+  display: flex; flex-direction: column; align-items: center;
+  flex: 1;
+}
+
+.target {
+  position: relative;
+  width: 100%; max-width: 160px;
+  aspect-ratio: 9/12;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  animation: sway 3s ease-in-out infinite;
+  border: 3px solid #DAA520;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  background: #111;
+  touch-action: manipulation;
+}
+.target:active { transform: scale(0.95) !important; }
+
+@keyframes sway {
+  0%, 100% { transform: rotate(-3deg); }
+  50%       { transform: rotate(3deg); }
+}
+
+.target video {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+
+/* Video placeholder when no src */
+.target .placeholder {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #222 0%, #333 100%);
+  color: #FFD700;
+  font-size: 13px;
+  text-align: center;
+  padding: 10px;
+  gap: 8px;
+}
+.target .placeholder span { font-size: 32px; }
+.target .placeholder p { color: #aaa; font-size: 11px; line-height: 1.4; }
+
+.target.hit {
+  animation: fall 0.55s ease-in forwards !important;
+  pointer-events: none;
+}
+@keyframes fall {
+  0%   { transform: rotate(0deg) translateY(0); opacity: 1; }
+  100% { transform: rotate(100deg) translateY(60px); opacity: 0; }
+}
+
+.stick {
+  width: 8px; height: 36px;
+  background: linear-gradient(180deg, #d4a060 0%, #a07840 100%);
+  border-radius: 4px;
+  margin-top: -3px;
+  box-shadow: 1px 0 4px rgba(0,0,0,0.4);
+}
+
+/* TARGET LABEL */
+.target-label {
+  color: #FFD700;
+  font-size: clamp(11px, 2.5vw, 14px);
+  margin-top: 6px;
+  text-shadow: 1px 1px 0 #8B0000;
+  text-align: center;
+}
+
+/* CONTROLS */
+.controls {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 20px 20px 12px; position: relative; z-index: 2;
+}
+
+#reset-btn {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(18px, 4vw, 22px);
+  background: linear-gradient(180deg, #FF4444 0%, #cc0000 100%);
+  color: #fff;
+  border: 3px solid #FFD700;
+  border-radius: 50px;
+  padding: 16px 50px;
+  cursor: pointer;
+  box-shadow: 0 5px 0 #8B0000, 0 0 24px rgba(255,68,68,0.4);
+  width: 100%; max-width: 320px;
+  touch-action: manipulation;
+  letter-spacing: 1px;
+}
+#reset-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #8B0000; }
+
+.hint {
+  color: rgba(255,255,255,0.45);
+  font-size: clamp(12px, 3vw, 14px);
+  text-align: center;
+  padding: 0 20px 16px;
+  position: relative; z-index: 2;
+  line-height: 1.5;
+}
+
+/* FLOATING TEXT */
+.hit-text {
+  position: absolute; pointer-events: none;
+  font-family: 'Fredoka One', cursive;
+  font-size: 26px;
+  color: #FFD700;
+  text-shadow: 2px 2px 0 #8B0000;
+  animation: floatUp 0.9s ease-out forwards;
+  z-index: 40;
+}
+@keyframes floatUp {
+  0%   { transform: translateY(0) scale(1);    opacity: 1; }
+  100% { transform: translateY(-80px) scale(1.5); opacity: 0; }
+}
+
+/* SCREEN FLASH */
+.flash {
+  position: absolute; inset: 0; border-radius: inherit;
+  background: rgba(255,255,255,0.22);
+  pointer-events: none; opacity: 0;
+  animation: flashAnim 0.28s ease-out forwards;
+  z-index: 15;
+}
+@keyframes flashAnim { 0% { opacity: 1; } 100% { opacity: 0; } }
+
+/* MODAL OVERLAY */
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.88);
+  display: none;
+  flex-direction: column; align-items: center; justify-content: center;
+  z-index: 100; gap: 16px;
+  padding: 30px 20px;
+}
+.overlay.active { display: flex; }
+
+.overlay-icon { font-size: clamp(48px, 12vw, 64px); }
+.overlay h2 {
+  font-family: 'Rye', serif;
+  font-size: clamp(22px, 6vw, 32px);
+  color: #FFD700;
+  text-shadow: 2px 2px 0 #8B0000;
+  text-align: center;
+}
+.overlay p {
+  color: #eee;
+  font-size: clamp(16px, 4vw, 20px);
+  text-align: center;
+  line-height: 1.6;
+  max-width: 480px;
+}
+
+.overlay-btns {
+  display: flex; flex-direction: column; gap: 14px;
+  width: 100%; max-width: 320px;
+  margin-top: 10px;
+}
+
+.btn-continue {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(17px, 4vw, 20px);
+  background: linear-gradient(180deg, #FFD700 0%, #e6b800 100%);
+  color: #3d2200;
+  border: none; border-radius: 50px;
+  padding: 16px 34px; cursor: pointer;
+  box-shadow: 0 5px 0 #8B6000;
+  width: 100%;
+  touch-action: manipulation;
+}
+.btn-continue:active { transform: translateY(3px); box-shadow: 0 2px 0 #8B6000; }
+
+.btn-restart {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(15px, 3.5vw, 18px);
+  background: transparent;
+  color: #aaa;
+  border: 2px solid #555; border-radius: 50px;
+  padding: 14px 28px; cursor: pointer;
+  width: 100%;
+  touch-action: manipulation;
+}
+.btn-restart:active { background: #222; }
+
+
+</style>
+</head>
+<body>
+
+<div id="game">
+  <div class="stars" id="stars"></div>
+
+  <div class="banner">Which is the biggest crime in Yinwar history?</div>
+  <div class="lights-row" id="lights"></div>
+
+
+
+  <div class="shelf">
+    <div class="targets" id="targets"></div>
+  </div>
+
+  <div class="controls">
+    <button id="reset-btn" onclick="resetGame()">↺ Play Again</button>
+  </div>
+  <div class="hint">👆 Tap a target to shoot it!</div>
+
+  <!-- Dialog Overlay -->
+  <div class="overlay" id="overlay">
+    <div class="overlay-icon" id="overlay-icon">🎯</div>
+    <h2 id="overlay-title">Hit!</h2>
+    <p id="overlay-msg"></p>
+    <div class="overlay-btns">
+      <button class="btn-continue" id="overlay-continue" onclick="closeDialog()">Keep Shooting! 🎯</button>
+      <button class="btn-restart" onclick="resetGame()">↺ Restart</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  CONFIGURATION — Edit this section to customise your game
+// ============================================================
+const TARGETS = [
+  {
+    videoSrc: 'video1.mp4',   // ← Replace with your MP4 file path
+    label: 'What am I going to do if you like men too?',     // ← Name shown below the target
+  },
+  {
+    videoSrc: 'video2.mp4',
+    label: 'You were easy for me!',
+  },
+  {
+    videoSrc: 'video3.mp4',
+    label: 'Teerak',
+  },
+];
+
+// --- PRIZES ---
+// The first 3 are regular prizes (equal chance among the 60%)
+// Prize 4 is the RARE prize (40% chance)
+const PRIZES = [
+  {
+    icon: '🎉',
+    title: 'Prize 1!',
+    msg: 'Please get your freebie from the police box.',  // ← Edit your prize message
+  },
+  {
+    icon: '🎊',
+    title: 'Prize 2!',
+    msg: 'Please get your freebie from the police box.',  // ← Edit your prize message
+  },
+  {
+    icon: '🥳',
+    title: 'Prize 3!',
+    msg: 'Please get your freebie from the police box.',  // ← Edit your prize message
+  },
+  {
+    // ⭐ RARE PRIZE 
+    icon: '🌟',
+    title: 'RARE Prize!',
+    msg: 'Congratulations you won a free photo from our booth',  // ← Edit your rare prize message
+    rare: true,
+  },
+];
+
+// Chance of getting the rare prize (0.0 to 1.0)
+const RARE_CHANCE = 0.15;
+
+function getRandomPrize() {
+  if (Math.random() < RARE_CHANCE) {
+    return PRIZES[3]; // rare prize
+  }
+  // Pick randomly from the 3 regular prizes
+  return PRIZES[Math.floor(Math.random() * 3)];
+}
+// ============================================================
+
+let hitTargets = new Set();
+let gameOver = false;
+let dialogOpen = false;
+
+function init() {
+  // Stars background
+  const starsEl = document.getElementById('stars');
+  starsEl.innerHTML = '';
+  for (let i = 0; i < 35; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const sz = Math.random() * 3 + 1;
+    s.style.cssText = `width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*100}%;animation-delay:${Math.random()*2}s;animation-duration:${1.4+Math.random()*1.2}s`;
+    starsEl.appendChild(s);
+  }
+
+  // Lights
+  const lightsEl = document.getElementById('lights');
+  lightsEl.innerHTML = '';
+  for (let i = 0; i < 18; i++) {
+    const b = document.createElement('div');
+    b.className = 'bulb';
+    lightsEl.appendChild(b);
+  }
+
+  renderTargets();
+}
+
+function renderTargets() {
+  const el = document.getElementById('targets');
+  el.innerHTML = '';
+
+  TARGETS.forEach((t, i) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'target-wrap';
+
+    // Target container
+    const tgt = document.createElement('div');
+    tgt.className = 'target';
+    tgt.id = 'target-' + i;
+    tgt.style.animationDelay = (i * 0.5) + 's';
+
+    // Video element
+    const vid = document.createElement('video');
+    vid.src = t.videoSrc;
+    vid.autoplay = true;
+    vid.loop = true;
+    vid.muted = true;
+    vid.playsInline = true;
+    vid.setAttribute('playsinline', '');
+    vid.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;';
+
+    // Fallback placeholder if video fails to load
+    const placeholder = document.createElement('div');
+    placeholder.className = 'placeholder';
+    placeholder.innerHTML = `<span>🎬</span><strong>${t.label}</strong><p>Place your video file:<br><em>${t.videoSrc}</em></p>`;
+
+    vid.addEventListener('error', () => {
+      vid.style.display = 'none';
+      placeholder.style.display = 'flex';
+    });
+    vid.addEventListener('loadeddata', () => {
+      placeholder.style.display = 'none';
+    });
+
+    tgt.appendChild(vid);
+    tgt.appendChild(placeholder);
+
+    // Touch & click handler
+    tgt.addEventListener('click', () => shoot(i));
+    tgt.addEventListener('touchend', (e) => { e.preventDefault(); shoot(i); });
+
+    const stick = document.createElement('div');
+    stick.className = 'stick';
+
+    const label = document.createElement('div');
+    label.className = 'target-label';
+    label.textContent = t.label;
+
+    wrap.appendChild(tgt);
+    wrap.appendChild(stick);
+    wrap.appendChild(label);
+    el.appendChild(wrap);
+  });
+}
+
+function shoot(idx) {
+  if (gameOver || hitTargets.has(idx) || dialogOpen) return;
+
+  const el = document.getElementById('target-' + idx);
+  const prize = getRandomPrize();
+
+  hitTargets.add(idx);
+
+  el.classList.add('hit');
+  spawnFloating(el, prize.rare ? '⭐ RARE! ⭐' : 'HIT! 🎯');
+  spawnFlash();
+
+  dialogOpen = true;
+  setTimeout(() => {
+    showHitDialog(prize);
+    if (hitTargets.size === TARGETS.length) {
+      gameOver = true;
+    }
+  }, 580);
+}
+
+function spawnFloating(refEl, text) {
+  const game = document.getElementById('game');
+  const gameRect = game.getBoundingClientRect();
+  const refRect = refEl.getBoundingClientRect();
+  const el = document.createElement('div');
+  el.className = 'hit-text';
+  el.style.left = (refRect.left - gameRect.left + 16) + 'px';
+  el.style.top  = (refRect.top  - gameRect.top  - 10) + 'px';
+  el.textContent = text;
+  game.appendChild(el);
+  el.addEventListener('animationend', () => el.remove());
+}
+
+function spawnFlash() {
+  const game = document.getElementById('game');
+  const f = document.createElement('div');
+  f.className = 'flash';
+  game.appendChild(f);
+  f.addEventListener('animationend', () => f.remove());
+}
+
+function showHitDialog(prize) {
+  document.getElementById('overlay-icon').textContent = prize.icon;
+  document.getElementById('overlay-title').textContent = prize.title;
+  document.getElementById('overlay-msg').textContent = prize.msg;
+  const h2 = document.querySelector('#overlay h2');
+  h2.style.color = prize.rare ? '#FF6FFF' : '#FFD700';
+  h2.style.textShadow = prize.rare ? '0 0 20px #ff00ff, 2px 2px 0 #5B0058' : '2px 2px 0 #8B0000';
+  document.getElementById('overlay-continue').style.display = 'block';
+  document.getElementById('overlay').classList.add('active');
+}
+
+function closeDialog() {
+  document.getElementById('overlay').classList.remove('active');
+  const h2 = document.querySelector('#overlay h2');
+  h2.style.color = '#FFD700';
+  h2.style.textShadow = '2px 2px 0 #8B0000';
+  dialogOpen = false;
+}
+
+function endGame(allCleared = false) {
+  gameOver = true;
+  dialogOpen = true;
+
+  const hit = hitTargets.size;
+  let icon, title, msg;
+
+  if (allCleared) {
+    icon = '🏆'; title = 'Perfect Round!';
+    msg = 'Amazing! You hit all 3 targets! You\'re a carnival legend! 🎪';
+  } else if (hit === 2) {
+    icon = '🥈'; title = 'Great Shot!';
+    msg = 'You hit ' + hit + ' out of 3 targets. So close — try again!';
+  } else if (hit === 1) {
+    icon = '🥉'; title = 'Keep Practicing!';
+    msg = 'You hit ' + hit + ' out of 3 targets. Give it another go!';
+  } else {
+    icon = '😅'; title = 'No Hits!';
+    msg = 'You missed all the targets this time. Give it another go!';
+  }
+
+  document.getElementById('overlay-icon').textContent = icon;
+  document.getElementById('overlay-title').textContent = title;
+  document.getElementById('overlay-msg').textContent = msg;
+  document.getElementById('overlay-continue').style.display = 'none';
+  document.getElementById('overlay').classList.add('active');
+}
+
+function resetGame() {
+  hitTargets.clear();
+  gameOver = false;
+  dialogOpen = false;
+  document.getElementById('overlay').classList.remove('active');
+  renderTargets();
+}
+
+init();
+</script>
+</body>
+</html>
